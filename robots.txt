@@ -1,0 +1,5 @@
+# MH Finance Costa Rica - Generador de Portadas
+# Uso privado - No indexar
+
+User-agent: *
+Disallow: /
