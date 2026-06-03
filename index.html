@@ -965,7 +965,6 @@ function sha256_pure(ascii){
     const v=(passInput.value||'').trim();
     if(!v) return;
     if(sha256_pure(v)===EXPECTED_HASH){
-      try{ localStorage.setItem('mh_portadas_ok','1'); }catch(e){}
       lock.style.transition='opacity .4s ease'; lock.style.opacity='0';
       setTimeout(function(){ lock.style.display='none'; }, 420);
     } else {
@@ -975,7 +974,8 @@ function sha256_pure(ascii){
   }
   document.getElementById('unlockBtn').addEventListener('click', tryUnlock);
   passInput.addEventListener('keydown', function(e){ if(e.key==='Enter') tryUnlock(); });
-  try{ if(localStorage.getItem('mh_portadas_ok')==='1'){ lock.style.display='none'; } }catch(e){}
+  /* La app SIEMPRE pide la contraseña al abrir (no recuerda la sesión). */
+  try{ localStorage.removeItem('mh_portadas_ok'); }catch(e){}
   if(window.innerWidth>768) setTimeout(function(){ passInput.focus(); }, 120);
 
   /* ===== Logo (vector recoloreado) ===== */
