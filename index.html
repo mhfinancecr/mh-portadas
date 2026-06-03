@@ -1093,7 +1093,7 @@ function sha256_pure(ascii){
   document.getElementById('dl-story').addEventListener('click', function(){ download('story'); });
 
   /* ===== Init ===== */
-  if(window.MHPost) MHPost.init();
+  if(typeof MHPost!=='undefined' && MHPost.init) MHPost.init();
   restore();
   MHTrends.makeLogos(function(logos){ state.logoWhite=logos.white; state.logoDark=logos.dark; state.logoRed=logos.red; render(); });
   if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(render); }
