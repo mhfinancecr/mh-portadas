@@ -416,6 +416,7 @@ const MHTrends = (function () {
   const IVORY2 = '#ece6da';
   const RED    = '#b3122a';
   const GOLD   = '#b08428';
+  const GOLD_BRIGHT = '#FFCB5C';  // dorado luminoso para texto sobre foto (alta legibilidad)
   const WA      = '#25D366';
 
   // Colores por estado — iguales al aplicativo original
@@ -472,11 +473,82 @@ const MHTrends = (function () {
     ctx.fillStyle='rgba(40,30,24,0.34)';ctx.font=`600 22px ${JK}`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText('VISTA PREVIA · SUBÍ TU FOTO', x+w/2, y+h*0.92);
   }
-  function photoOrPH(d,x,y,w,h){ if(d.photo) drawPhoto(d.photo,x,y,w,h,d.photoZoom||1,d.photoOX||0,d.photoOY||0); else placeholder(x,y,w,h); }
+  /* ---------- mejora automática de foto: nitidez + brillo (cacheada) ---------- */
+  function _mkc(w,h){
+    if(typeof document!=='undefined' && document.createElement){ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; }
+    if(typeof createCanvas!=='undefined'){ return createCanvas(w,h); }
+    if(typeof OffscreenCanvas!=='undefined'){ return new OffscreenCanvas(w,h); }
+    return null;
+  }
+  function _clamp(v){ return v<0?0:(v>255?255:v); }
+  function _unsharp(cv, w, h, amount){
+    const c2=cv.getContext('2d');
+    const tmp=_mkc(w,h); if(!tmp) return;
+    const t=tmp.getContext('2d');
+    t.filter='blur(1.1px)'; t.drawImage(cv,0,0); t.filter='none';
+    let orig,blur;
+    try{ orig=c2.getImageData(0,0,w,h); blur=t.getImageData(0,0,w,h); }catch(e){ return; }
+    const od=orig.data, bd=blur.data;
+    for(let i=0;i<od.length;i+=4){
+      od[i]  =_clamp(od[i]  +amount*(od[i]  -bd[i]));
+      od[i+1]=_clamp(od[i+1]+amount*(od[i+1]-bd[i+1]));
+      od[i+2]=_clamp(od[i+2]+amount*(od[i+2]-bd[i+2]));
+    }
+    c2.putImageData(orig,0,0);
+  }
+  const _enhCache=(typeof WeakMap!=='undefined')?new WeakMap():null;
+  function enhancePhoto(img){
+    if(!img) return img;
+    if(_enhCache){ const hit=_enhCache.get(img); if(hit) return hit; }
+    const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    if(!w||!h) return img;
+    const maxDim=1600; let sw=w, sh=h;
+    if(Math.max(w,h)>maxDim){ const s=maxDim/Math.max(w,h); sw=Math.round(w*s); sh=Math.round(h*s); }
+    const off=_mkc(sw,sh); if(!off) return img;
+    const o=off.getContext('2d');
+    o.filter='brightness(1.07) contrast(1.06) saturate(1.08)';
+    o.drawImage(img,0,0,sw,sh);
+    o.filter='none';
+    _unsharp(off, sw, sh, 0.7);
+    if(_enhCache) _enhCache.set(img, off);
+    return off;
+  }
+  function photoOrPH(d,x,y,w,h){ if(d.photo) drawPhoto(enhancePhoto(d.photo),x,y,w,h,d.photoZoom||1,d.photoOX||0,d.photoOY||0); else placeholder(x,y,w,h); }
 
   function amen(d){return (d.amenities||[]).map(a=>(''+a).trim()).filter(Boolean);}
   function fitFont(txt,weight,px,family,maxW){ctx.font=`${weight} ${px}px ${family}`;while(ctx.measureText(txt).width>maxW&&px>22){px-=2;ctx.font=`${weight} ${px}px ${family}`;}return px;}
   function logoAt(img,rx,ty,size){ if(!img||img.complete===false||!(img.naturalWidth||img.width))return; const r=(img.naturalWidth||img.width)/(img.naturalHeight||img.height);let lw,lh;if(r>1){lw=size;lh=size/r;}else{lh=size;lw=size*r;}ctx.drawImage(img,rx-lw,ty,lw,lh);return {w:lw,h:lh};}
+
+  // Brillo promedio (0..1) de una región del canvas ya dibujado
+  function avgLuma(x,y,w,h){
+    x=Math.max(0,Math.round(x)); y=Math.max(0,Math.round(y)); w=Math.round(w); h=Math.round(h);
+    const cw=ctx.canvas.width, ch=ctx.canvas.height;
+    if(x+w>cw) w=cw-x; if(y+h>ch) h=ch-y; if(w<=0||h<=0) return 1;
+    let data; try{ data=ctx.getImageData(x,y,w,h).data; }catch(e){ return 0; }
+    let sum=0,n=0;
+    for(let i=0;i<data.length;i+=16){ sum += 0.2126*data[i]+0.7152*data[i+1]+0.0722*data[i+2]; n++; }
+    return n? (sum/n)/255 : 1;
+  }
+  // Logo blanco con halo sutil: invisible sobre fondos oscuros, define el
+  // contorno sobre fondos claros para que NO se pierda (sin recuadro ni máscara).
+  function logoGlow(d, rx, ty, size){
+    const img=d.logoWhite; if(!img) return;
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.55)';
+    ctx.shadowBlur=size*0.16; ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
+    logoAt(img, rx, ty, size);
+    logoAt(img, rx, ty, size); // segunda pasada: refuerza el halo sobre fondos claros
+    ctx.restore();
+  }
+  // Logo que se adapta: blanco sobre fondo oscuro, oscuro sobre fondo claro (sin sombra ni recuadro)
+  function adaptiveLogo(d, rx, ty, size){
+    const probe=d.logoWhite||d.logoDark; if(!probe) return;
+    const r=(probe.naturalWidth||probe.width||1)/(probe.naturalHeight||probe.height||1);
+    let lw,lh; if(r>1){lw=size;lh=size/r;}else{lh=size;lw=size*r;}
+    const luma=avgLuma(rx-lw-6, ty-6, lw+12, lh+12);
+    const img = luma>0.60 ? (d.logoDark||d.logoWhite) : d.logoWhite;
+    logoAt(img, rx, ty, size);
+  }
 
   /* iconos finos */
   function ic(name,x,y,s,c){
@@ -658,14 +730,13 @@ const MHTrends = (function () {
      ==================================================================== */
   function dTipografica(W,H,d,F){
     const story=F.story;
-    // foto con brillo/contraste/saturación realzados
-    if(d.photo){ ctx.filter='brightness(1.10) contrast(1.06) saturate(1.08)'; }
     photoOrPH(d,0,0,W,H);
-    ctx.filter='none';
-    // scrim superior CORTO solo para badge/logo (no tiñe la foto)
-    const gt=ctx.createLinearGradient(0,0,0,H*0.17);
-    gt.addColorStop(0,'rgba(10,8,8,0.46)');gt.addColorStop(1,'rgba(10,8,8,0)');
-    ctx.fillStyle=gt;ctx.fillRect(0,0,W,H*0.17);
+    // scrim superior sutil (degradado editorial en el borde) para legibilidad
+    // del logo y el sello sobre fotos claras. No toca el logo (sin halo/recuadro).
+    const _td = H*0.24;
+    const gt=ctx.createLinearGradient(0,0,0,_td);
+    gt.addColorStop(0,'rgba(12,10,10,0.52)');gt.addColorStop(0.55,'rgba(12,10,10,0.22)');gt.addColorStop(1,'rgba(12,10,10,0)');
+    ctx.fillStyle=gt;ctx.fillRect(0,0,W,_td);
     // scrim inferior CONCENTRADO solo donde va el texto (arriba queda nítido)
     const botStart = story? H*0.56 : H*0.48;
     const gb=ctx.createLinearGradient(0,botStart,0,H);
@@ -683,9 +754,9 @@ const MHTrends = (function () {
     ctx.fillStyle='#fff';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText((d.status||'').toUpperCase(),pad+22,topY+(story?27:25));
     logoAt(d.logoWhite, W-pad, topY-(story?6:4), story?96:80);
 
-    // sombra sutil tras el texto (legibilidad con velo claro)
+    // sombra reforzada tras el texto (legibilidad sobre cualquier foto)
     ctx.save();
-    ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=story?22:18; ctx.shadowOffsetY=2;
+    ctx.shadowColor='rgba(0,0,0,0.78)'; ctx.shadowBlur=story?26:20; ctx.shadowOffsetY=2;
 
     // bloque inferior
     const botSafe=story?300:0;
@@ -718,9 +789,9 @@ const MHTrends = (function () {
     })();
     y-= story?96:80;
     // ubicación
-    ctx.fillStyle=GOLD;ctx.font=`700 ${story?24:21}px ${JK}`;ctx.textBaseline='alphabetic';ctx.textAlign='left';
+    ctx.fillStyle=GOLD_BRIGHT;ctx.font=`700 ${story?24:21}px ${JK}`;ctx.textBaseline='alphabetic';ctx.textAlign='left';
     ctx.fillText((d.location||'').toUpperCase(), pad+(story?38:32), y);
-    ic('pin',pad,y-(story?24:20),story?30:26,GOLD);
+    ic('pin',pad,y-(story?24:20),story?30:26,GOLD_BRIGHT);
     y-= story?78:62;
     // nombre serif grande (auto-ajuste al ancho)
     const nf=fitFont(d.name||'', '600', story?78:64, NR, W-pad*2);
@@ -730,7 +801,7 @@ const MHTrends = (function () {
     ctx.fillStyle='#fff';ctx.font=`600 ${story?120:104}px ${NR}`;
     const pTxt=(d.currency||'')+(d.price||'');
     ctx.fillText(pTxt, pad, y);
-    if(d.priceSuffix){const pw=ctx.measureText(pTxt).width;ctx.fillStyle=GOLD;ctx.font=`700 ${story?34:30}px ${JK}`;ctx.textBaseline='alphabetic';ctx.fillText(d.priceSuffix||'', pad+pw+22, y);}
+    if(d.priceSuffix){const pw=ctx.measureText(pTxt).width;ctx.fillStyle=GOLD_BRIGHT;ctx.font=`700 ${story?34:30}px ${JK}`;ctx.textBaseline='alphabetic';ctx.fillText(d.priceSuffix||'', pad+pw+22, y);}
     ctx.restore();
   }
 
@@ -822,7 +893,7 @@ const MHTrends = (function () {
     mk('#ffffff','white');mk('#1a1a1a','dark');mk('#b3122a','red');
   }
 
-  return { render, makeLogos };
+  return { render, makeLogos, enhancePhoto };
 })();
 
 </script>
