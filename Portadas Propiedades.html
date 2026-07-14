@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1280" />
+<title>Portadas de Propiedades · HMH Finance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  :root {
+    --bg: #0B0B0C; --panel: #131314; --panel-2: #1A1A1C;
+    --border: #26262A; --text: #E8E6E0; --muted: #8A8780;
+    --gold: #C8A36A; --accent: #E8C989;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+  body { overflow: hidden; }
+  #root { height: 100vh; }
+
+  .app { display: grid; grid-template-columns: 440px 1fr; height: 100vh; }
+
+  .sidebar { background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; padding: 28px 28px 80px; }
+  .sidebar::-webkit-scrollbar { width: 10px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #2a2a2e; border-radius: 5px; }
+
+  .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .brand-mark { width: 48px; height: 48px; background: var(--gold); color: #0B0B0C; font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 22px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
+  .brand-title { font-weight: 700; font-size: 17px; }
+  .brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+
+  .section { margin-bottom: 28px; }
+  .section h3 { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; font-weight: 500; }
+
+  .format-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .format-btn { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 14px 10px; color: var(--text); cursor: pointer; font-family: inherit; transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .format-btn:hover { border-color: #3a3a40; }
+  .format-btn.on { border-color: var(--gold); background: #1a1612; }
+  .fmt-preview { background: #2a2a2e; border-radius: 2px; }
+  .fmt-story  { width: 22px; height: 40px; }
+  .fmt-post   { width: 32px; height: 40px; }
+  .fmt-square { width: 36px; height: 36px; }
+  .format-btn.on .fmt-preview { background: var(--gold); }
+  .fmt-label { font-size: 12px; font-weight: 600; }
+  .fmt-ratio { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+
+  .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tmpl-btn { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; color: var(--text); cursor: pointer; font-family: inherit; text-align: left; }
+  .tmpl-btn:hover { border-color: #3a3a40; }
+  .tmpl-btn.on { border-color: var(--gold); background: #1a1612; }
+  .tmpl-name { font-weight: 600; font-size: 13px; }
+  .tmpl-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+  .tmpl-btn.wide { grid-column: span 2; }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: span 2; }
+  .field label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  .field input, .field select, .field textarea { background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); }
+  .field textarea { resize: vertical; min-height: 70px; font-family: inherit; }
+  .field .hint { font-size: 11px; color: var(--muted); font-style: italic; }
+
+  .checkbox { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; padding: 10px 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px; }
+  .checkbox:hover { border-color: #3a3a40; }
+  .checkbox input { accent-color: var(--gold); width: 16px; height: 16px; }
+  .checkbox .cx-label { font-size: 13px; }
+
+  .filedrop-empty { width: 100%; background: var(--panel-2); border: 1.5px dashed var(--border); border-radius: 6px; padding: 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; color: var(--text); font-family: inherit; text-align: left; }
+  .filedrop-empty:hover { border-color: var(--gold); background: #1a1612; }
+  .filedrop-label { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .filedrop-preview { position: relative; background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .filedrop-preview img { display: block; width: 100%; max-height: 200px; object-fit: cover; }
+  .filedrop.sm .filedrop-preview img { max-height: 90px; object-fit: contain; background: #222; padding: 12px; }
+  .filedrop-actions { display: flex; border-top: 1px solid var(--border); }
+  .filedrop-actions button { flex: 1; background: transparent; border: none; padding: 10px; color: var(--muted); cursor: pointer; font-family: inherit; font-size: 12px; }
+  .filedrop-actions button:hover { background: #1a1612; color: var(--gold); }
+  .filedrop-actions button + button { border-left: 1px solid var(--border); }
+
+  .export-btn { width: 100%; padding: 14px; border-radius: 6px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 8px; border: 1px solid transparent; }
+  .export-btn.primary { background: var(--gold); color: #0B0B0C; border-color: var(--gold); }
+  .export-btn.primary:hover:not(:disabled) { background: #d6b077; }
+  .export-btn.ghost { background: transparent; border-color: var(--border); color: var(--text); }
+  .export-btn.ghost:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .export-hint { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+
+  .stage { background: radial-gradient(circle at 30% 20%, #1a1a1c 0%, var(--bg) 60%); overflow: auto; display: flex; align-items: center; justify-content: center; padding: 40px; }
+  .stage-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+  .preview-meta { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; display: flex; gap: 16px; background: rgba(0,0,0,0.4); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); z-index: 10; }
+  .pm-dim { color: var(--text); }
+  .preview-frame { transform-origin: center center; box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05); overflow: hidden; flex-shrink: 0; }
+
+  /* Compare grid (for "all 5" mode) */
+  .compare-wrap { width: 100%; height: 100%; overflow: auto; padding: 20px; }
+  .compare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1400px; margin: 0 auto; }
+  .compare-cell { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .compare-head { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+  .compare-head-name { font-weight: 600; font-size: 13px; }
+  .compare-head-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+  .compare-frame-wrap { background: #000; padding: 16px; display: flex; justify-content: center; align-items: center; }
+  .compare-frame { transform-origin: top left; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useMemo } = React;
+
+const FORMATS = {
+  square: { w: 1080, h: 1080, label: "Cuadrado",  ratio: "1:1"  },
+  post:   { w: 1080, h: 1350, label: "Post feed", ratio: "4:5"  },
+  story:  { w: 1080, h: 1920, label: "Historia",  ratio: "9:16" },
+};
+
+const GOLD = "#C9A765";
+const GOLD_SOFT = "#E0C489";
+const GOLD_DEEP = "#9E7F40";
+const PAPER = "#F4ECE0";
+
+const OPERATIONS = {
+  venta:         { label: "En Venta",             accent: "#8C1B1B" },
+  alquiler:      { label: "En Alquiler",          accent: GOLD      },
+  temporario:    { label: "Alquiler temporario",  accent: GOLD      },
+  emprendimiento:{ label: "Pre-Venta",            accent: "#1B2A4E" },
+};
+
+const fmtPrice = (n, currency = "CRC") => {
+  if (n === "" || n === null || n === undefined) return "—";
+  const num = typeof n === "string" ? parseFloat(n.replace(/[^\d.]/g, "")) : n;
+  if (isNaN(num)) return String(n);
+  const formatted = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(num);
+  const sym = { CRC: "₡", USD: "$", EUR: "€" }[currency] || "";
+  return `${sym}${formatted}`;
+};
+
+const Ico = ({ name, size = 32, color = "currentColor", s = 1.7 }) => {
+  const p = {
+    bed:  <><path d="M3 19V7m18 12v-6a3 3 0 0 0-3-3H3"/><path d="M3 13h18"/><path d="M7 10V8a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2"/></>,
+    bath: <><path d="M4 11h16v4a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-4Z"/><path d="M6 11V6a2 2 0 0 1 4 0"/><circle cx="8" cy="6" r="0.8" fill={color} stroke="none"/><path d="M5 20l-1 2M19 20l1 2"/></>,
+    car:  <><path d="M4 17h16M4 17l2-7a3 3 0 0 1 3-2h6a3 3 0 0 1 3 2l2 7M4 17v3h3v-3M17 17v3h3v-3"/><circle cx="8" cy="17" r="1.3" fill={color} stroke="none"/><circle cx="16" cy="17" r="1.3" fill={color} stroke="none"/></>,
+    area: <><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></>,
+    pin:  <><path d="M12 22s-7-7.5-7-13a7 7 0 0 1 14 0c0 5.5-7 13-7 13Z"/><circle cx="12" cy="9" r="2.5"/></>,
+    phone:<><path d="M5 3h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2Z"/></>,
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={s} strokeLinecap="round" strokeLinejoin="round">{p[name]}</svg>;
+};
+
+// Photo component — with studio-grade filter for a more edited, professional look
+const Photo = ({ src, style, fit = "cover", bg = "#0F0D08", filter = true }) => {
+  const studioFilter = filter
+    ? "contrast(1.08) saturate(1.12) brightness(1.02)"
+    : "none";
+  if (src) return (
+    <div style={{ ...style, background: bg, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+      <img src={src} crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: fit, objectPosition: "center", filter: studioFilter }} />
+      {/* Warm tint wash for cohesive studio feel */}
+      {filter && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(201,167,101,0.04) 0%, rgba(15,13,8,0.08) 100%)", mixBlendMode: "overlay", pointerEvents: "none" }} />}
+    </div>
+  );
+  return <div style={{ ...style, background: "repeating-linear-gradient(135deg, #1a1a1a, #1a1a1a 20px, #222 20px, #222 40px)", display: "flex", alignItems: "center", justifyContent: "center", color: "#666", fontFamily: "'JetBrains Mono', monospace", fontSize: 22, letterSpacing: 3 }}>[ FOTO ]</div>;
+};
+
+// Build list of specs (filter out empty values)
+const getSpecs = (data) => [
+  { icon: "bed",  value: data.dormitorios, label: "Hab." },
+  { icon: "bath", value: data.banos,       label: "Baños" },
+  { icon: "car",  value: data.cochera,     label: "Auto" },
+  { icon: "area", value: data.m2,          label: "m²" },
+].filter(s => s.value !== "" && s.value !== null && s.value !== undefined);
+
+// ============================================================
+// 1) EDITORIAL PREMIUM — dark, gold serif, photo in upper area
+// ============================================================
+const TEditorial = ({ data, format }) => {
+  const { w, h } = FORMATS[format];
+  const op = OPERATIONS[data.operacion] || OPERATIONS.venta;
+  const isStory = format === "story";
+  const pad = Math.round(w * 0.06);
+  const photoH = isStory ? Math.round(h * 0.58) : Math.round(h * 0.52);
+  const specs = getSpecs(data);
+
+  return (
+    <div style={{ width: w, height: h, background: "#0F0E0C", color: PAPER, position: "relative", overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+      {/* Top bar */}
+      <div style={{ position: "absolute", top: pad, left: pad, right: pad, display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 3 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 10, height: 10, background: GOLD, transform: "rotate(45deg)" }} />
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, letterSpacing: 3, color: GOLD, textTransform: "uppercase" }}>
+            {op.label}
+          </div>
+        </div>
+        {data.logoUrl && <img src={data.logoUrl} crossOrigin="anonymous" style={{ height: 50, objectFit: "contain" }} />}
+      </div>
+
+      {/* Photo */}
+      <Photo src={data.photoUrl} style={{ position: "absolute", top: pad + 70, left: pad, right: pad, height: photoH, borderRadius: 3 }} />
+      <div style={{ position: "absolute", top: pad + 70, left: pad, right: pad, height: photoH, boxShadow: `inset 0 0 0 1px ${GOLD}44`, pointerEvents: "none", borderRadius: 3 }} />
+
+      {/* Content below photo */}
+      <div style={{ position: "absolute", top: pad + 70 + photoH + 36, left: pad, right: pad, bottom: pad, display: "flex", flexDirection: "column" }}>
+        {/* Headline + price */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, marginBottom: 24 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, letterSpacing: 3, color: GOLD_SOFT, textTransform: "uppercase", marginBottom: 6 }}>Ubicación</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 48 : 38, fontWeight: 500, lineHeight: 1.1, color: PAPER }}>
+              {data.ubicacion || "—"}
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 3, color: GOLD_SOFT, textTransform: "uppercase", marginBottom: 4 }}>Precio</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 58 : 46, fontWeight: 600, color: GOLD, lineHeight: 1, letterSpacing: -0.5 }}>
+              {fmtPrice(data.precio, data.moneda)}
+            </div>
+          </div>
+        </div>
+        {/* Gold rule */}
+        <div style={{ height: 1, background: `${GOLD}55`, margin: "8px 0 24px" }} />
+        {/* Specs row */}
+        {specs.length > 0 && (
+          <div style={{ display: "flex", gap: isStory ? 40 : 32, marginBottom: 24 }}>
+            {specs.map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Ico name={s.icon} size={isStory ? 32 : 26} color={GOLD_SOFT} />
+                <div>
+                  <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 30 : 24, fontWeight: 600, lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 2, color: GOLD_SOFT, textTransform: "uppercase", marginTop: 2 }}>{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Phone */}
+        <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", border: `1.5px solid ${GOLD}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Ico name="phone" size={18} color={GOLD_SOFT} />
+          </div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isStory ? 26 : 22, fontWeight: 500 }}>{data.telefono}</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 2) MONOCHROME BOLD — white card, huge serif price, minimal
+// ============================================================
+const TMono = ({ data, format }) => {
+  const { w, h } = FORMATS[format];
+  const op = OPERATIONS[data.operacion] || OPERATIONS.venta;
+  const isStory = format === "story";
+  const pad = Math.round(w * 0.07);
+  const photoH = isStory ? Math.round(h * 0.48) : Math.round(h * 0.44);
+  const specs = getSpecs(data);
+
+  return (
+    <div style={{ width: w, height: h, background: PAPER, color: "#1A1814", position: "relative", overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+      {/* Top bar */}
+      <div style={{ position: "absolute", top: pad, left: pad, right: pad, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {data.logoUrl ? <img src={data.logoUrl} crossOrigin="anonymous" style={{ height: 50, objectFit: "contain", filter: "brightness(0.1)" }} /> : <div />}
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", color: "#1A1814", padding: "6px 14px", border: `1.5px solid ${op.accent}`, color: op.accent }}>
+          {op.label}
+        </div>
+      </div>
+
+      {/* Headline */}
+      <div style={{ position: "absolute", top: pad + 90, left: pad, right: pad }}>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 120 : 88, fontWeight: 600, lineHeight: 0.95, letterSpacing: -2, color: "#1A1814" }}>
+          {fmtPrice(data.precio, data.moneda)}
+        </div>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isStory ? 22 : 18, fontWeight: 400, color: "#6B6558", marginTop: 14, lineHeight: 1.4, letterSpacing: 0.3 }}>
+          {data.ubicacion}
+        </div>
+      </div>
+
+      {/* Photo */}
+      <Photo src={data.photoUrl} bg="#e8dfd0" style={{ position: "absolute", bottom: pad + 140, left: pad, right: pad, height: photoH }} />
+
+      {/* Specs strip */}
+      {specs.length > 0 && (
+        <div style={{ position: "absolute", bottom: pad + 70, left: pad, right: pad, display: "flex", justifyContent: "space-between", paddingTop: 18, borderTop: `1px solid #1A181422` }}>
+          {specs.map((s, i) => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+              <Ico name={s.icon} size={isStory ? 26 : 22} color="#1A1814" s={1.5} />
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 26 : 22, fontWeight: 600, lineHeight: 1 }}>{s.value} <span style={{ fontSize: isStory ? 14 : 12, color: "#6B6558", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1.5, fontWeight: 400 }}>{s.label}</span></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Phone */}
+      <div style={{ position: "absolute", bottom: pad, left: pad, right: pad, display: "flex", justifyContent: "space-between", alignItems: "center", color: "#1A1814" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Ico name="phone" size={18} color="#1A1814" />
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isStory ? 22 : 18, fontWeight: 600 }}>{data.telefono}</div>
+        </div>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 2, color: "#6B6558", textTransform: "uppercase" }}>HMH Finance</div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 3) SPLIT PANEL — half photo, half info panel
+// ============================================================
+const TSplit = ({ data, format }) => {
+  const { w, h } = FORMATS[format];
+  const op = OPERATIONS[data.operacion] || OPERATIONS.venta;
+  const isStory = format === "story";
+  const pad = Math.round(w * 0.055);
+  // Layout: photo top, panel bottom
+  const photoH = isStory ? Math.round(h * 0.55) : Math.round(h * 0.5);
+  const specs = getSpecs(data);
+
+  return (
+    <div style={{ width: w, height: h, background: "#121110", color: PAPER, position: "relative", overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+      {/* Photo top half */}
+      <Photo src={data.photoUrl} bg="#0A0906" style={{ position: "absolute", top: 0, left: 0, right: 0, height: photoH }} />
+      {/* Operation chip on photo */}
+      <div style={{ position: "absolute", top: pad, left: pad, background: op.accent, color: op.accent === GOLD ? "#1A1814" : "#FFF6E0", padding: "10px 20px", fontFamily: "'JetBrains Mono', monospace", fontSize: 12, letterSpacing: 3, textTransform: "uppercase", fontWeight: 600 }}>
+        {op.label}
+      </div>
+      {/* Logo top-right */}
+      {data.logoUrl && <img src={data.logoUrl} crossOrigin="anonymous" style={{ position: "absolute", top: pad, right: pad, height: 50, objectFit: "contain", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }} />}
+
+      {/* Info panel bottom */}
+      <div style={{ position: "absolute", top: photoH, left: 0, right: 0, bottom: 0, background: "linear-gradient(180deg, #121110 0%, #0B0A08 100%)", padding: pad, display: "flex", flexDirection: "column", gap: isStory ? 24 : 16 }}>
+        {/* Price + ubicación */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 3, color: GOLD_SOFT, textTransform: "uppercase", marginBottom: 6 }}>Ubicación</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 40 : 30, fontWeight: 500, lineHeight: 1.1, color: PAPER }}>
+              {data.ubicacion}
+            </div>
+          </div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 3, color: GOLD_SOFT, textTransform: "uppercase", marginBottom: 4 }}>Precio</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 56 : 42, fontWeight: 600, color: GOLD, lineHeight: 1, letterSpacing: -0.5 }}>
+              {fmtPrice(data.precio, data.moneda)}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: `${GOLD}44` }} />
+
+        {/* Specs */}
+        {specs.length > 0 && (
+          <div style={{ display: "flex", gap: isStory ? 36 : 24, flexWrap: "wrap" }}>
+            {specs.map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Ico name={s.icon} size={isStory ? 32 : 26} color={GOLD_SOFT} />
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 30 : 24, fontWeight: 600, color: PAPER }}>
+                  {s.value}<span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: isStory ? 13 : 11, letterSpacing: 2, color: GOLD_SOFT, fontWeight: 400, marginLeft: 8, textTransform: "uppercase" }}>{s.label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Phone */}
+        <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", border: `1.5px solid ${GOLD}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Ico name="phone" size={18} color={GOLD_SOFT} />
+          </div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isStory ? 24 : 20, fontWeight: 500 }}>{data.telefono}</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 4) FULL BLEED — photo fills frame, gradient overlay at bottom
+// ============================================================
+const TFullBleed = ({ data, format }) => {
+  const { w, h } = FORMATS[format];
+  const op = OPERATIONS[data.operacion] || OPERATIONS.venta;
+  const isStory = format === "story";
+  const isSquare = format === "square";
+  const pad = Math.round(w * 0.055);
+  const specs = getSpecs(data);
+
+  return (
+    <div style={{ width: w, height: h, background: "#0F0D08", color: PAPER, position: "relative", overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+      {/* Photo full bleed - cover so it fills the entire frame */}
+      <Photo src={data.photoUrl} bg="#0F0D08" fit="cover" style={{ position: "absolute", inset: 0 }} />
+
+      {/* Top gradient for logo/chip */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: Math.round(h * 0.24), background: "linear-gradient(180deg, rgba(0,0,0,0.45), transparent)", pointerEvents: "none" }} />
+
+      {/* Bottom frosted blur panel — lighter, more transparent so photo shows through */}
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: Math.round(h * (isStory ? 0.42 : 0.44)), background: "linear-gradient(180deg, rgba(40,32,20,0) 0%, rgba(40,32,20,0.18) 25%, rgba(30,24,15,0.42) 60%, rgba(25,20,12,0.55) 100%)", backdropFilter: "blur(14px) saturate(1.1)", WebkitBackdropFilter: "blur(14px) saturate(1.1)", pointerEvents: "none", maskImage: "linear-gradient(180deg, transparent 0%, black 40%)", WebkitMaskImage: "linear-gradient(180deg, transparent 0%, black 40%)" }} />
+
+      {/* TOP: logo + operation chip — BIGGER */}
+      <div style={{ position: "absolute", top: pad, left: pad, right: pad, display: "flex", justifyContent: "space-between", alignItems: "flex-start", zIndex: 3, gap: 20 }}>
+        {data.logoUrl ? <img src={data.logoUrl} crossOrigin="anonymous" style={{ height: isStory ? 140 : isSquare ? 110 : 120, objectFit: "contain", objectPosition: "left top", filter: "drop-shadow(0 3px 12px rgba(0,0,0,0.7))" }} /> : <div />}
+        <div style={{ background: op.accent, color: op.accent === GOLD ? "#1A1814" : "#FFF6E0", padding: `${isStory ? 18 : 14}px ${isStory ? 36 : 30}px`, fontFamily: "'JetBrains Mono', monospace", fontSize: isStory ? 18 : isSquare ? 15 : 16, letterSpacing: 3, textTransform: "uppercase", fontWeight: 700, boxShadow: "0 6px 20px rgba(0,0,0,0.4)" }}>
+          {op.label}
+        </div>
+      </div>
+
+      {/* BOTTOM content — BIGGER text */}
+      <div style={{ position: "absolute", left: pad, right: pad, bottom: pad, zIndex: 4, display: "flex", flexDirection: "column", gap: isStory ? 26 : isSquare ? 18 : 22 }}>
+        {/* Ubicación label */}
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: isStory ? 16 : isSquare ? 13 : 14, letterSpacing: 3, color: GOLD_SOFT, textTransform: "uppercase", fontWeight: 500 }}>Ubicación</div>
+        {/* Location + price */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 62 : isSquare ? 42 : 52, fontWeight: 500, lineHeight: 1.08, color: PAPER, flex: 1, minWidth: 0, textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}>
+            {data.ubicacion}
+          </div>
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 78 : isSquare ? 56 : 66, fontWeight: 600, color: GOLD, lineHeight: 1, letterSpacing: -0.5, textAlign: "right", flexShrink: 0, textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}>
+            {fmtPrice(data.precio, data.moneda)}
+          </div>
+        </div>
+
+        <div style={{ height: 1.5, background: `${GOLD}88` }} />
+
+        {/* Specs + phone — BIGGER */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          {specs.length > 0 && (
+            <div style={{ display: "flex", gap: isStory ? 40 : isSquare ? 24 : 32 }}>
+              {specs.map((s, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Ico name={s.icon} size={isStory ? 38 : isSquare ? 30 : 34} color={GOLD_SOFT} />
+                  <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 36 : isSquare ? 28 : 32, fontWeight: 600, color: PAPER, textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, color: PAPER }}>
+            <Ico name="phone" size={isStory ? 30 : isSquare ? 24 : 26} color={GOLD_SOFT} />
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isStory ? 32 : isSquare ? 24 : 28, fontWeight: 600, letterSpacing: 0.3, textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>{data.telefono}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 5) FICHA TÉCNICA — structured, architectural document style
+// ============================================================
+const TFicha = ({ data, format }) => {
+  const { w, h } = FORMATS[format];
+  const op = OPERATIONS[data.operacion] || OPERATIONS.venta;
+  const isStory = format === "story";
+  const pad = Math.round(w * 0.05);
+  const photoH = isStory ? Math.round(h * 0.42) : Math.round(h * 0.4);
+  const specs = getSpecs(data);
+
+  return (
+    <div style={{ width: w, height: h, background: "#F2ECE0", color: "#1A1814", position: "relative", overflow: "hidden", fontFamily: "'Inter', sans-serif" }}>
+      {/* Header strip */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: `${pad * 0.6}px ${pad}px`, background: "#1A1814", color: PAPER, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {data.logoUrl ? <img src={data.logoUrl} crossOrigin="anonymous" style={{ height: 36, objectFit: "contain" }} /> : <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 20, color: GOLD }}>HMH Finance</div>}
+        </div>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 3, color: GOLD, textTransform: "uppercase" }}>
+          Ficha · {op.label}
+        </div>
+      </div>
+
+      {/* Photo */}
+      <Photo src={data.photoUrl} bg="#d9d0bd" style={{ position: "absolute", top: 80, left: pad, right: pad, height: photoH }} />
+
+      {/* Content grid */}
+      <div style={{ position: "absolute", top: 80 + photoH + pad, left: pad, right: pad, bottom: pad, display: "flex", flexDirection: "column", gap: isStory ? 20 : 14 }}>
+        {/* Ubicación */}
+        <div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 3, color: "#6B6558", textTransform: "uppercase", marginBottom: 4 }}>Ubicación</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 38 : 28, fontWeight: 500, lineHeight: 1.1 }}>{data.ubicacion}</div>
+        </div>
+
+        {/* Specs grid */}
+        {specs.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(specs.length, 4)}, 1fr)`, gap: 1, background: "#1A181422", border: `1px solid #1A181422` }}>
+            {specs.map((s, i) => (
+              <div key={i} style={{ background: "#F2ECE0", padding: `${isStory ? 16 : 12}px`, display: "flex", flexDirection: "column", gap: 6 }}>
+                <Ico name={s.icon} size={isStory ? 26 : 22} color={GOLD_DEEP} s={1.5} />
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 28 : 22, fontWeight: 600, lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: 2, color: "#6B6558", textTransform: "uppercase" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Price row */}
+        <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "flex-end", paddingTop: 16, borderTop: `2px solid ${GOLD_DEEP}` }}>
+          <div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 3, color: "#6B6558", textTransform: "uppercase", marginBottom: 4 }}>{op.label}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: isStory ? 58 : 44, fontWeight: 600, lineHeight: 1, color: "#1A1814", letterSpacing: -0.5 }}>
+              {fmtPrice(data.precio, data.moneda)}
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: 3, color: "#6B6558", textTransform: "uppercase", marginBottom: 4 }}>Contacto</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isStory ? 22 : 18, fontWeight: 600 }}>{data.telefono}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TEMPLATES = [
+  { id: "fullbleed", name: "Full Bleed", desc: "Foto completa · overlay", Cmp: TFullBleed },
+];
+
+// ============================================================
+// APP
+// ============================================================
+const STORAGE_KEY = "hmh_portadas_v4";
+const DEFAULTS = {
+  operacion: "venta",
+  precio: "",
+  moneda: "USD",
+  ubicacion: "",
+  dormitorios: "",
+  banos: "",
+  cochera: "",
+  m2: "",
+  telefono: "",
+  photoUrl: null,
+  logoUrl: "assets/logo-hmh.png",
+};
+
+function loadState() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return { ...DEFAULTS, ...JSON.parse(raw) }; } catch {}
+  return DEFAULTS;
+}
+function saveState(s) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {} }
+
+function App() {
+  const [data, setData] = useState(loadState);
+  const [format, setFormat] = useState("square");
+  const [template] = useState("fullbleed");
+  const compareAll = false;
+  const setCompareAll = () => {};
+  const setTemplate = () => {};
+  const [exporting, setExporting] = useState(false);
+  useEffect(() => { saveState(data); }, [data]);
+  const update = (patch) => setData(d => ({ ...d, ...patch }));
+  const handleFile = (key) => (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const r = new FileReader(); r.onload = () => update({ [key]: r.result }); r.readAsDataURL(f);
+  };
+  return (
+    <div className="app">
+      <Sidebar {...{data, update, format, setFormat, template, setTemplate, compareAll, setCompareAll, handleFile, exporting, setExporting}} />
+      <main className="stage">
+        {compareAll
+          ? <CompareAll data={data} format={format} />
+          : <Preview data={data} format={format} template={template} />}
+      </main>
+    </div>
+  );
+}
+
+function Sidebar({ data, update, format, setFormat, template, setTemplate, compareAll, setCompareAll, handleFile, exporting, setExporting }) {
+  return (
+    <aside className="sidebar">
+      <div className="brand">
+        <div className="brand-mark">HM</div>
+        <div>
+          <div className="brand-title">Generador de Portadas</div>
+          <div className="brand-sub">HMH Finance · Propiedades</div>
+        </div>
+      </div>
+
+      <Section title="1. Formato">
+        <div className="format-row">
+          {Object.entries(FORMATS).map(([id, f]) => (
+            <button key={id} className={`format-btn ${format === id ? "on" : ""}`} onClick={() => setFormat(id)}>
+              <div className={`fmt-preview fmt-${id}`} />
+              <div className="fmt-label">{f.label}</div>
+              <div className="fmt-ratio">{f.w}×{f.h}</div>
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="2. Foto de la propiedad">
+        <FileDrop current={data.photoUrl} onChange={handleFile("photoUrl")} onClear={() => update({ photoUrl: null })} label="Subí la foto" hint="Ocupa todo el diseño · preferí fotos con buena composición" />
+      </Section>
+
+      <Section title="3. Operación y precio">
+        <div className="field-grid">
+          <Field label="Operación" type="select" value={data.operacion} onChange={v => update({ operacion: v })}
+            options={[["venta","En Venta"],["alquiler","En Alquiler"],["temporario","Alq. temporario"],["emprendimiento","Pre-Venta"]]} />
+          <Field label="Moneda" type="select" value={data.moneda} onChange={v => update({ moneda: v })}
+            options={[["CRC","₡ CRC"],["USD","$ USD"],["EUR","€ EUR"]]} />
+          <Field label="Precio" full type="number" value={data.precio} onChange={v => update({ precio: v })} placeholder="175000" />
+        </div>
+      </Section>
+
+      <Section title="4. Ubicación y contacto">
+        <Field label="Ubicación" full value={data.ubicacion} onChange={v => update({ ubicacion: v })} placeholder="Condominio Veredas, Alajuelita" />
+        <Field label="Teléfono / WhatsApp" full value={data.telefono} onChange={v => update({ telefono: v })} placeholder="(506) 6040-1917" />
+      </Section>
+
+      <Section title="5. Características">
+        <div className="field-grid">
+          <Field label="Habitaciones" type="number" value={data.dormitorios} onChange={v => update({ dormitorios: v })} />
+          <Field label="Baños" value={data.banos} onChange={v => update({ banos: v })} placeholder="2.5" />
+          <Field label="Parqueos" type="number" value={data.cochera} onChange={v => update({ cochera: v })} />
+          <Field label="m²" type="number" value={data.m2} onChange={v => update({ m2: v })} placeholder="157" />
+        </div>
+      </Section>
+
+      <Section title="6. Logo">
+        <FileDrop current={data.logoUrl} onChange={handleFile("logoUrl")} onClear={() => update({ logoUrl: null })} label="Logo (opcional)" hint="PNG transparente" small />
+      </Section>
+
+      <Section title="7. Descargar">
+        <button className="export-btn primary" disabled={exporting} onClick={() => exportPNG(format, template, setExporting)}>
+          {exporting ? "Generando…" : `Descargar PNG ${FORMATS[format].w}×${FORMATS[format].h}`}
+        </button>
+        <button className="export-btn ghost" disabled={exporting} onClick={() => exportAllFormats(template, setExporting)}>
+          Descargar los 3 formatos
+        </button>
+        <div className="export-hint">PNG a resolución nativa para Instagram y Facebook.</div>
+      </Section>
+    </aside>
+  );
+}
+
+function Section({ title, children }) { return <section className="section"><h3>{title}</h3>{children}</section>; }
+
+function Field({ label, value, onChange, placeholder, type = "text", options, full, hint }) {
+  return (
+    <div className={`field ${full ? "full" : ""}`}>
+      <label>{label}</label>
+      {type === "select" ? (
+        <select value={value ?? ""} onChange={e => onChange(e.target.value)}>{options.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select>
+      ) : type === "textarea" ? (
+        <textarea value={value ?? ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows="3" />
+      ) : (
+        <input type={type} value={value ?? ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+      )}
+      {hint && <div className="hint">{hint}</div>}
+    </div>
+  );
+}
+
+function FileDrop({ current, onChange, onClear, label, hint, small }) {
+  const ref = useRef();
+  return (
+    <div className={`filedrop ${small ? "sm" : ""}`}>
+      <input type="file" accept="image/*" ref={ref} onChange={onChange} style={{ display: "none" }} />
+      {current ? (
+        <div className="filedrop-preview">
+          <img src={current} alt="" />
+          <div className="filedrop-actions">
+            <button onClick={() => ref.current.click()}>Cambiar</button>
+            <button onClick={onClear}>Quitar</button>
+          </div>
+        </div>
+      ) : (
+        <button className="filedrop-empty" onClick={() => ref.current.click()}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div>
+            <div className="filedrop-label">{label}</div>
+            <div className="hint" style={{ fontSize: 11, color: "#8A8780" }}>{hint}</div>
+          </div>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Preview({ data, format, template }) {
+  const { w, h } = FORMATS[format];
+  const wrapRef = useRef(null);
+  const [scale, setScale] = useState(0.4);
+  useEffect(() => {
+    const calc = () => {
+      const el = wrapRef.current; if (!el) return;
+      const pad = 24;
+      const sw = (el.clientWidth - pad * 2) / w;
+      const sh = (el.clientHeight - pad * 2) / h;
+      setScale(Math.min(sw, sh, 0.8));
+    };
+    calc();
+    const ro = new ResizeObserver(calc);
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    return () => ro.disconnect();
+  }, [w, h]);
+  const Tmpl = TEMPLATES.find(t => t.id === template)?.Cmp || TEditorial;
+  return (
+    <div className="stage-inner" ref={wrapRef}>
+      <div className="preview-meta">
+        <span className="pm-dim">{w} × {h}</span>
+        <span>{FORMATS[format].ratio}</span>
+      </div>
+      <div className="preview-frame" style={{ width: w, height: h, transform: `scale(${scale})` }}>
+        <Tmpl data={data} format={format} />
+      </div>
+    </div>
+  );
+}
+
+function CompareAll({ data, format }) {
+  const { w, h } = FORMATS[format];
+  const cellW = 380;
+  const scale = cellW / w;
+  return (
+    <div className="compare-wrap">
+      <div className="compare-grid">
+        {TEMPLATES.map(t => (
+          <div key={t.id} className="compare-cell">
+            <div className="compare-head">
+              <div className="compare-head-name">{t.name}</div>
+              <div className="compare-head-tag">{FORMATS[format].label}</div>
+            </div>
+            <div className="compare-frame-wrap" style={{ height: h * scale + 32 }}>
+              <div className="compare-frame" style={{ width: w, height: h, transform: `scale(${scale})` }}>
+                <t.Cmp data={data} format={format} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---- Export ----
+async function renderToPng(format, templateId) {
+  const { w, h } = FORMATS[format];
+  const container = document.createElement("div");
+  container.style.cssText = `position:fixed;left:-99999px;top:0;width:${w}px;height:${h}px;`;
+  document.body.appendChild(container);
+  const root = ReactDOM.createRoot(container);
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  const Tmpl = TEMPLATES.find(t => t.id === templateId)?.Cmp || TEditorial;
+  root.render(<Tmpl data={data} format={format} />);
+  await new Promise(r => setTimeout(r, 400));
+  await Promise.all([...container.querySelectorAll("img")].map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = res; })));
+  await new Promise(r => setTimeout(r, 400));
+  const canvas = await window.html2canvas(container.firstChild, { width: w, height: h, scale: 1, backgroundColor: null, useCORS: true, logging: false });
+  root.unmount();
+  container.remove();
+  return canvas;
+}
+
+async function exportPNG(format, template, setExporting) {
+  setExporting(true);
+  try {
+    const canvas = await renderToPng(format, template);
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `portada-${template}-${format}-${Date.now()}.png`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, "image/png");
+  } catch (e) { alert("Error: " + e.message); console.error(e); }
+  finally { setExporting(false); }
+}
+
+async function exportAllFormats(template, setExporting) {
+  setExporting(true);
+  try {
+    for (const fmt of ["square", "post", "story"]) {
+      const canvas = await renderToPng(fmt, template);
+      const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `portada-${template}-${fmt}.png`; a.click();
+      await new Promise(r => setTimeout(r, 400));
+      URL.revokeObjectURL(url);
+    }
+  } catch (e) { alert("Error: " + e.message); console.error(e); }
+  finally { setExporting(false); }
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
