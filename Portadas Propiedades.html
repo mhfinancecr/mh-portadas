@@ -106,6 +106,9 @@
   .compare-frame { transform-origin: top left; }
 </style>
 </head>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#0B0B0C"/><text x="100" y="115" font-family="serif" font-size="60" fill="#C9A765" text-anchor="middle">HM</text></svg>
+</template>
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
@@ -747,34 +750,63 @@ async function renderToPng(format, templateId) {
   return canvas;
 }
 
-// Save/share a canvas as PNG — works on desktop (download) and iOS (share sheet / new tab fallback)
+// In-page modal fallback: shows the PNG so the user can long-press → "Agregar a Fotos".
+// Works even inside a standalone/home-screen-installed app, where window.open()
+// and some share targets are unreliable.
+function showSaveModal(dataUrl, filename) {
+  let modal = document.getElementById("__save_modal");
+  if (modal) modal.remove();
+  modal = document.createElement("div");
+  modal.id = "__save_modal";
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(10,10,10,0.92);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;";
+  modal.innerHTML = `
+    <div style="color:#F4ECE0;font-family:'Inter',sans-serif;font-size:15px;text-align:center;max-width:420px;line-height:1.5;">
+      Mantené presionada la imagen y elegí <b>"Agregar a Fotos"</b> (o "Guardar imagen").
+    </div>
+    <img src="${dataUrl}" style="max-width:90vw;max-height:70vh;border-radius:6px;box-shadow:0 20px 60px rgba(0,0,0,0.6);" />
+    <button id="__save_modal_close" style="margin-top:8px;background:#C9A765;color:#0B0B0C;border:none;padding:12px 28px;border-radius:6px;font-family:'Inter',sans-serif;font-weight:600;font-size:14px;cursor:pointer;">Cerrar</button>
+  `;
+  document.body.appendChild(modal);
+  document.getElementById("__save_modal_close").onclick = () => modal.remove();
+}
+
+// Save/share a canvas as PNG — works on desktop (download), iOS Safari (share sheet /
+// new tab), and iOS standalone/home-screen apps (in-page modal).
 async function saveCanvasAsPng(canvas, filename) {
   const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
-  const file = new File([blob], filename, { type: "image/png" });
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
 
-  // iOS/iPadOS Safari: use native share sheet so user can "Guardar en Fotos"
+  // iOS installed as home-screen app: window.open() and some share targets are
+  // unreliable here, so go straight to the reliable long-press modal.
+  if (isIOS && isStandalone) {
+    showSaveModal(canvas.toDataURL("image/png"), filename);
+    return;
+  }
+
+  const file = new File([blob], filename, { type: "image/png" });
+  // iOS/iPadOS Safari (regular tab): use native share sheet so user can "Guardar en Fotos"
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: filename });
       return;
     } catch (e) {
-      // user cancelled share or it failed — fall through to other methods
+      // user cancelled share or it failed — fall back to modal
       if (e && e.name === "AbortError") return;
+      if (isIOS) { showSaveModal(canvas.toDataURL("image/png"), filename); return; }
     }
   }
 
-  const url = URL.createObjectURL(blob);
-  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   if (isIOS) {
-    // Safari iOS ignores the download attribute on blob URLs — open in a new tab
-    // so the user can long-press the image and choose "Add to Photos".
-    window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } else {
-    const a = document.createElement("a");
-    a.href = url; a.download = filename; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // Fallback for iOS without Web Share support
+    showSaveModal(canvas.toDataURL("image/png"), filename);
+    return;
   }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function exportPNG(format, template, setExporting) {
