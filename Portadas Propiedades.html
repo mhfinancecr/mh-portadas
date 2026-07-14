@@ -747,16 +747,41 @@ async function renderToPng(format, templateId) {
   return canvas;
 }
 
+// Save/share a canvas as PNG — works on desktop (download) and iOS (share sheet / new tab fallback)
+async function saveCanvasAsPng(canvas, filename) {
+  const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+  const file = new File([blob], filename, { type: "image/png" });
+
+  // iOS/iPadOS Safari: use native share sheet so user can "Guardar en Fotos"
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    } catch (e) {
+      // user cancelled share or it failed — fall through to other methods
+      if (e && e.name === "AbortError") return;
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIOS) {
+    // Safari iOS ignores the download attribute on blob URLs — open in a new tab
+    // so the user can long-press the image and choose "Add to Photos".
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } else {
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+
 async function exportPNG(format, template, setExporting) {
   setExporting(true);
   try {
     const canvas = await renderToPng(format, template);
-    canvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `portada-${template}-${format}-${Date.now()}.png`; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }, "image/png");
+    await saveCanvasAsPng(canvas, `portada-${template}-${format}-${Date.now()}.png`);
   } catch (e) { alert("Error: " + e.message); console.error(e); }
   finally { setExporting(false); }
 }
@@ -766,12 +791,8 @@ async function exportAllFormats(template, setExporting) {
   try {
     for (const fmt of ["square", "post", "story"]) {
       const canvas = await renderToPng(fmt, template);
-      const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `portada-${template}-${fmt}.png`; a.click();
+      await saveCanvasAsPng(canvas, `portada-${template}-${fmt}.png`);
       await new Promise(r => setTimeout(r, 400));
-      URL.revokeObjectURL(url);
     }
   } catch (e) { alert("Error: " + e.message); console.error(e); }
   finally { setExporting(false); }
