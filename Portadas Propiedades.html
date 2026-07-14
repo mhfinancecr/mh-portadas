@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=1280" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>Portadas de Propiedades · HMH Finance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -750,6 +753,23 @@ async function renderToPng(format, templateId) {
   return canvas;
 }
 
+// Visible on-page error banner — alert() can be unreliable inside an
+// installed home-screen app, so surface failures here too.
+function showErrorBanner(e) {
+  let banner = document.getElementById("__error_banner");
+  if (banner) banner.remove();
+  banner = document.createElement("div");
+  banner.id = "__error_banner";
+  banner.style.cssText = "position:fixed;inset:0;background:rgba(10,10,10,0.95);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;";
+  banner.innerHTML = `
+    <div style="color:#F4ECE0;font-family:'Inter',sans-serif;font-size:16px;text-align:center;max-width:420px;">No se pudo generar la imagen.</div>
+    <div style="color:#8A8780;font-family:'JetBrains Mono',monospace;font-size:12px;text-align:center;max-width:420px;word-break:break-word;">${(e && e.message) || String(e)}</div>
+    <button id="__error_banner_close" style="margin-top:8px;background:#C9A765;color:#0B0B0C;border:none;padding:12px 28px;border-radius:6px;font-family:'Inter',sans-serif;font-weight:600;font-size:14px;cursor:pointer;">Cerrar</button>
+  `;
+  document.body.appendChild(banner);
+  document.getElementById("__error_banner_close").onclick = () => banner.remove();
+}
+
 // In-page modal fallback: shows the PNG so the user can long-press → "Agregar a Fotos".
 // Works even inside a standalone/home-screen-installed app, where window.open()
 // and some share targets are unreliable.
@@ -814,7 +834,7 @@ async function exportPNG(format, template, setExporting) {
   try {
     const canvas = await renderToPng(format, template);
     await saveCanvasAsPng(canvas, `portada-${template}-${format}-${Date.now()}.png`);
-  } catch (e) { alert("Error: " + e.message); console.error(e); }
+  } catch (e) { showErrorBanner(e); console.error(e); }
   finally { setExporting(false); }
 }
 
@@ -826,7 +846,7 @@ async function exportAllFormats(template, setExporting) {
       await saveCanvasAsPng(canvas, `portada-${template}-${fmt}.png`);
       await new Promise(r => setTimeout(r, 400));
     }
-  } catch (e) { alert("Error: " + e.message); console.error(e); }
+  } catch (e) { showErrorBanner(e); console.error(e); }
   finally { setExporting(false); }
 }
 
