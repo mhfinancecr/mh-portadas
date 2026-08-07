@@ -999,11 +999,16 @@ const MHPost = (function () {
       }
       const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-      // In iOS home-screen apps, navigator.clipboard.writeText can resolve as
-      // "success" without actually placing anything on the system clipboard —
-      // the legacy execCommand path is the one that reliably works there.
+      // iOS home-screen apps (WKWebView) can report success from both the Clipboard
+      // API and execCommand('copy') without actually writing to the system
+      // pasteboard. The only reliable path there is: select the text and let the
+      // user tap "Copiar" from iOS's native selection menu.
       if(isIOS && isStandalone){
-        legacyCopy();
+        out.removeAttribute('readonly');
+        out.focus();
+        out.select();
+        out.setSelectionRange(0,99999);
+        if(fb){ fb.textContent='Texto seleccionado: tocá "Copiar" en el menú que aparece sobre el texto'; fb.style.color='var(--brand)'; fb.style.opacity='1'; setTimeout(function(){fb.style.opacity='0'; fb.style.color='';},5000); }
       } else if(navigator.clipboard&&navigator.clipboard.writeText){
         navigator.clipboard.writeText(out.value).then(ok).catch(legacyCopy);
       } else { legacyCopy(); }
