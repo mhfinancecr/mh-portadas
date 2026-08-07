@@ -999,16 +999,20 @@ const MHPost = (function () {
       }
       const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-      // iOS home-screen apps (WKWebView) can report success from both the Clipboard
-      // API and execCommand('copy') without actually writing to the system
-      // pasteboard. The only reliable path there is: select the text and let the
-      // user tap "Copiar" from iOS's native selection menu.
+      // iOS home-screen apps: clipboard writes (API or execCommand) and even the
+      // native selection "Copy" menu can silently fail to reach the system
+      // pasteboard in this WKWebView context. The share sheet is a true OS-level
+      // action, so it reliably offers "Copy" plus direct share to WhatsApp/Notes/etc.
       if(isIOS && isStandalone){
-        out.removeAttribute('readonly');
-        out.focus();
-        out.select();
-        out.setSelectionRange(0,99999);
-        if(fb){ fb.textContent='Texto seleccionado: tocá "Copiar" en el menú que aparece sobre el texto'; fb.style.color='var(--brand)'; fb.style.opacity='1'; setTimeout(function(){fb.style.opacity='0'; fb.style.color='';},5000); }
+        if(navigator.share){
+          navigator.share({ text: out.value }).catch(function(){
+            out.removeAttribute('readonly'); out.focus(); out.select(); out.setSelectionRange(0,99999);
+            if(fb){ fb.textContent='Texto seleccionado: tocá "Copiar" en el menú que aparece sobre el texto'; fb.style.color='var(--brand)'; fb.style.opacity='1'; setTimeout(function(){fb.style.opacity='0'; fb.style.color='';},5000); }
+          });
+        } else {
+          out.removeAttribute('readonly'); out.focus(); out.select(); out.setSelectionRange(0,99999);
+          if(fb){ fb.textContent='Texto seleccionado: tocá "Copiar" en el menú que aparece sobre el texto'; fb.style.color='var(--brand)'; fb.style.opacity='1'; setTimeout(function(){fb.style.opacity='0'; fb.style.color='';},5000); }
+        }
       } else if(navigator.clipboard&&navigator.clipboard.writeText){
         navigator.clipboard.writeText(out.value).then(ok).catch(legacyCopy);
       } else { legacyCopy(); }
