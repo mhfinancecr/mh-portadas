@@ -987,9 +987,19 @@ const MHPost = (function () {
     if(cp) cp.addEventListener('click', function(){
       if(!out||!out.value) return;
       function ok(){ if(fb){fb.textContent='✓ Copiado al portapapeles'; fb.style.opacity='1'; setTimeout(function(){fb.style.opacity='0';},2500);} }
+      function fail(){ if(fb){fb.textContent='No se pudo copiar automáticamente: el texto quedó seleccionado, usá copiar manual (mantené presionado → Copiar)'; fb.style.color='var(--brand)'; fb.style.opacity='1'; setTimeout(function(){fb.style.opacity='0'; fb.style.color='';},4000);} }
+      function legacyCopy(){
+        out.removeAttribute('readonly');
+        out.focus();
+        out.select();
+        out.setSelectionRange(0,99999);
+        let success=false;
+        try{ success=document.execCommand('copy'); }catch(e){ success=false; }
+        if(success) ok(); else fail();
+      }
       if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(out.value).then(ok).catch(function(){ out.select(); out.setSelectionRange(0,99999); document.execCommand('copy'); ok(); });
-      } else { out.select(); out.setSelectionRange(0,99999); document.execCommand('copy'); ok(); }
+        navigator.clipboard.writeText(out.value).then(ok).catch(legacyCopy);
+      } else { legacyCopy(); }
     });
   }
   return { init, generate };
