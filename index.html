@@ -997,7 +997,14 @@ const MHPost = (function () {
         try{ success=document.execCommand('copy'); }catch(e){ success=false; }
         if(success) ok(); else fail();
       }
-      if(navigator.clipboard&&navigator.clipboard.writeText){
+      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      // In iOS home-screen apps, navigator.clipboard.writeText can resolve as
+      // "success" without actually placing anything on the system clipboard —
+      // the legacy execCommand path is the one that reliably works there.
+      if(isIOS && isStandalone){
+        legacyCopy();
+      } else if(navigator.clipboard&&navigator.clipboard.writeText){
         navigator.clipboard.writeText(out.value).then(ok).catch(legacyCopy);
       } else { legacyCopy(); }
     });
